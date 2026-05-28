@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.svelte-kit/
+
+*.log
+frontend.out.log
+frontend.err.log
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
