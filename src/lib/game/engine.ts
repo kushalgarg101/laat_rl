@@ -232,7 +232,7 @@ function discardCleanTrick(state: GameState): void {
   state.roundDiscard = [...state.roundDiscard, ...discarded];
   state.currentTrick = [];
   state.leadSuit = null;
-  state.currentPlayer = winnerId;
+  state.currentPlayer = state.players[winnerId].hand.length > 0 ? winnerId : nextActivePlayer(state, winnerId);
   addEvent(state, "trick_discarded", `${state.players[winnerId].name} wins the sub-round; ${discarded.length} card(s) go to the round discard.`);
 }
 

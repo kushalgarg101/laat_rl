@@ -135,6 +135,37 @@ h2 {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
+.primary.secondary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+}
+
+.primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.agent-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: rgba(30, 64, 175, 0.28);
+  color: #dbeafe;
+}
+
+.agent-banner strong {
+  color: #f8fafc;
+}
+
+.agent-banner span {
+  font-size: 0.9rem;
+}
+
 .alert {
   border: 1px solid #ef4444;
   border-radius: 8px;
@@ -249,6 +280,21 @@ h2 {
   font-size: 0.7rem;
   color: #f87171;
   margin: 4px 0 0;
+}
+
+.avatar-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: #334155;
+}
+
+.avatar-info {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Positioning players around the table dynamically via inline styles later, or fixed */
@@ -407,15 +453,21 @@ h2 {
 }
 
 button.card {
+  position: absolute;
+  bottom: 0;
+  transform-origin: bottom center;
+  transform: translateX(var(--card-tx, 0)) translateY(var(--card-ty, 0)) rotate(var(--card-rot, 0deg));
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s, filter 0.2s;
   will-change: transform;
 }
 
 button.card:hover:not(:disabled) {
-  transform: translateY(-16px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.2);
-  z-index: 10;
+  transform: translateX(var(--card-tx, 0)) translateY(calc(var(--card-ty, 0) - 20px)) rotate(var(--card-rot, 0deg)) scale(1.15);
+  box-shadow: 0 0 25px #10b981, 0 8px 16px rgba(0,0,0,0.5);
+  border-color: #34d399;
+  z-index: 50 !important;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%2310b981" stroke="white" stroke-width="1.5"><path d="M19 14l-4.5 4.5a2 2 0 0 1-2.83 0L9.5 16.34a2 2 0 1 1 2.83-2.83l.84.84V6a2 2 0 1 1 4 0v3.5a2 2 0 1 1 4 0v4.5z"/></svg>') 10 10, pointer;
 }
 
 .red { color: #dc2626 !important; }
@@ -565,10 +617,13 @@ button.card:disabled {
 }
 
 .hand {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   justify-content: center;
+  align-items: flex-end;
+  height: 160px;
+  margin-top: -20px;
+  perspective: 1000px;
 }
 
 @media (max-width: 1050px) {
