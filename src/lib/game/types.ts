@@ -63,6 +63,7 @@ export interface GameState {
   winnerIds: number[];
   loserIds: number[];
   events: GameEvent[];
+  roundRankings: Record<number, number[][]>;
 }
 
 export interface PublicPlayerView {
@@ -85,4 +86,5 @@ export interface PublicGameView {
   loserIds: number[];
   players: PublicPlayerView[];
   events: GameEvent[];
+  roundRankings: Record<number, number[][]>;
 }

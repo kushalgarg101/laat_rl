@@ -55,6 +55,7 @@ class GameState:
     winner_ids: list[int] = field(default_factory=list)
     loser_ids: list[int] = field(default_factory=list)
     events: list[GameEvent] = field(default_factory=list)
+    round_rankings: dict[int, list[list[int]]] = field(default_factory=dict)
 
 
 def create_game(config: GameConfig | None = None) -> GameState:
@@ -155,6 +156,7 @@ def snapshot(state: GameState) -> dict[str, Any]:
         "game_over": state.game_over,
         "winner_ids": state.winner_ids,
         "loser_ids": state.loser_ids,
+        "round_rankings": state.round_rankings,
     }
 
 
@@ -250,6 +252,18 @@ def finish_round_if_needed(state: GameState) -> None:
     active_count = sum(1 for player in state.players if player.hand)
     if active_count > 1 or not state.round_discard:
         return
+
+    # Calculate rankings for this round (fewest cards = 1st place)
+    counts = {}
+    for p in state.players:
+        c = len(p.hand)
+        if c not in counts:
+            counts[c] = []
+        counts[c].append(p.id)
+    
+    # Sort by number of cards ascending
+    ranked_groups = [counts[c] for c in sorted(counts.keys())]
+    state.round_rankings[state.round] = ranked_groups
 
     add_event(state, "round_ended", f"Round {state.round} ended with {active_count} player(s) holding cards.")
     if state.round >= state.config.max_rounds:

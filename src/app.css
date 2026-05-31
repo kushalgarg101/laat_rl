@@ -25,10 +25,10 @@ input {
 .app-shell {
   width: min(1440px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 24px 0 32px;
+  padding: 16px 0 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .topbar {
@@ -38,7 +38,7 @@ input {
   gap: 24px;
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(10px);
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -59,7 +59,7 @@ h2 {
 }
 
 h1 {
-  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-size: clamp(1.2rem, 2.5vw, 1.9rem);
   line-height: 1.1;
   color: #f8fafc;
 }
@@ -150,21 +150,104 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 20px;
   border: 1px solid rgba(59, 130, 246, 0.35);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 12px 20px;
   background: rgba(30, 64, 175, 0.28);
   color: #dbeafe;
 }
 
-.agent-banner strong {
-  color: #f8fafc;
+.banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.agent-banner span {
-  font-size: 0.9rem;
+.banner-left strong {
+  color: #f8fafc;
+  font-size: 0.95rem;
 }
+
+.banner-left span {
+  font-size: 0.8rem;
+  color: #93c5fd;
+}
+
+.banner-assignments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.last-action-tag {
+  font-size: 0.85rem;
+  color: #bfdbfe;
+  padding: 4px 10px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Human turn variant - green glow */
+.agent-banner-human-turn {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(6, 78, 59, 0.3);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 4px 20px rgba(16, 185, 129, 0.12);
+  animation: humanTurnPulse 2s ease-in-out infinite;
+}
+
+.agent-banner-human-turn .banner-left strong {
+  color: #6ee7b7;
+}
+
+.agent-banner-human-turn .banner-left span {
+  color: #a7f3d0;
+}
+
+@keyframes humanTurnPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 4px 20px rgba(16, 185, 129, 0.12); }
+  50%       { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3), 0 4px 24px rgba(16, 185, 129, 0.22); }
+}
+
+/* Controls group in the banner */
+.banner-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.banner-ctrl-btn {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  min-width: unset;
+}
+
+.banner-auto-btn {
+  background: linear-gradient(135deg, #059669, #0d9488);
+  border-color: rgba(5, 150, 105, 0.6);
+}
+
+.banner-auto-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #10b981, #14b8a6);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.banner-stop-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border-color: rgba(220, 38, 38, 0.6);
+}
+
+.banner-stop-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
 
 .alert {
   border: 1px solid #ef4444;
@@ -174,6 +257,277 @@ h2 {
   background: rgba(127, 29, 29, 0.3);
   font-weight: 600;
   backdrop-filter: blur(4px);
+}
+
+/* ============================================================
+   RL Setup Panel
+   ============================================================ */
+
+.rl-setup-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rl-setup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.rl-setup-header h2 {
+  color: #e0e7ff;
+  font-size: 1rem;
+}
+
+.rl-hint {
+  margin: 0;
+  max-width: 480px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+/* Grid of player rows */
+.player-model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.player-model-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border-color 0.2s;
+}
+
+.player-model-row:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.player0-row {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.07);
+}
+
+.player0-row:hover {
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
+.player-model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.player-slot-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-model-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+/* Model select wrapper */
+.model-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.model-select {
+  appearance: none;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  min-width: 150px;
+  max-width: 200px;
+  flex: 1;
+}
+
+.model-select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.model-select option {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* ============================================================
+   Model Badge Pills  (shared by select wrapper + avatar + banner)
+   ============================================================ */
+
+.model-pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* none / heuristic */
+.model-badge-none {
+  background: rgba(71, 85, 105, 0.45);
+  color: #94a3b8;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+/* Model 1 – teal */
+.model-badge-1 {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+/* Model 2 – blue */
+.model-badge-2 {
+  background: rgba(37, 99, 235, 0.22);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.45);
+}
+
+/* Model 3 – purple */
+.model-badge-3 {
+  background: rgba(124, 58, 237, 0.22);
+  color: #c4b5fd;
+  border: 1px solid rgba(124, 58, 237, 0.45);
+}
+
+/* Human player – amber/gold */
+.model-badge-human {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+/* Tint the select border too */
+.model-select.model-badge-1 { border-color: rgba(16, 185, 129, 0.5); }
+.model-select.model-badge-2 { border-color: rgba(37, 99, 235, 0.5); }
+.model-select.model-badge-3 { border-color: rgba(124, 58, 237, 0.5); }
+
+/* Banner assignment chips */
+.assignment-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Avatar model badge (small label inside player avatar)
+   ============================================================ */
+
+.avatar-model-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Model legend strip
+   ============================================================ */
+
+.model-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 12px 16px;
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* ============================================================
+   RL Setup Footer
+   ============================================================ */
+
+.rl-setup-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rl-start-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  padding: 0 24px;
+  height: 42px;
+  font-size: 0.9rem;
+}
+
+.rl-start-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.rl-status-msg {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Active state for the RL Models toggle button */
+.rl-panel-active {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
 }
 
 /* Result Band */
@@ -212,15 +566,24 @@ h2 {
   align-items: start;
 }
 
+/* Left column: table + hand stacked */
+.table-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
 /* The Casino Table */
 .casino-table {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
-  min-height: 550px;
+  aspect-ratio: 16 / 8;
+  min-height: 400px;
+  max-height: 480px;
   background: #2c1a11; /* Wood edge */
   border-radius: 140px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 
     0 20px 40px rgba(0,0,0,0.5),
     inset 0 0 15px rgba(0,0,0,0.9);
@@ -454,7 +817,7 @@ h2 {
 
 button.card {
   position: absolute;
-  bottom: 0;
+  bottom: 14px;
   transform-origin: bottom center;
   transform: translateX(var(--card-tx, 0)) translateY(var(--card-ty, 0)) rotate(var(--card-rot, 0deg));
   cursor: pointer;
@@ -477,7 +840,7 @@ button.card:hover:not(:disabled) {
 button.card:disabled {
   cursor: not-allowed;
   filter: grayscale(0.8) brightness(0.7);
-  transform: translateY(4px);
+  transform: translateX(var(--card-tx, 0)) translateY(calc(var(--card-ty, 0) + 8px)) rotate(var(--card-rot, 0deg));
 }
 
 /* Sidebar Info */
@@ -580,14 +943,14 @@ button.card:disabled {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px 20px;
 }
 
 .hand-heading {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .hand-heading div {
@@ -621,8 +984,8 @@ button.card:disabled {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 160px;
-  margin-top: -20px;
+  height: 130px;
+  margin-top: -10px;
   perspective: 1000px;
 }
 
@@ -630,10 +993,14 @@ button.card:disabled {
   .game-container {
     grid-template-columns: 1fr;
   }
+  .table-col {
+    gap: 10px;
+  }
   .casino-table {
     border-radius: 80px;
     padding: 16px;
-    min-height: 450px;
+    min-height: 350px;
+    max-height: 420px;
   }
   .felt {
     border-radius: 70px;
@@ -671,3 +1038,153 @@ button.card:disabled {
     height: 98px;
   }
 }
+
+/* ====================================================================
+   Scoreboard CSS Styles
+   ==================================================================== */
+.scoreboard-panel {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scoreboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scoreboard-header h2 {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scoreboard-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.games-played-chip {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.reset-stats-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.reset-stats-btn:hover {
+  color: #ef4444;
+  transform: rotate(-90deg);
+}
+
+.scoreboard-empty {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-style: italic;
+  margin: 8px 0;
+  text-align: center;
+}
+
+.scoreboard-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scoreboard-row {
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.scoreboard-row:hover {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.scoreboard-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scoreboard-name {
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scoreboard-record {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.rank-count {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.scoreboard-bar-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scoreboard-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sb-model-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.sb-model-dot.model-badge-1 { background-color: #10b981; }
+.sb-model-dot.model-badge-2 { background-color: #3b82f6; }
+.sb-model-dot.model-badge-3 { background-color: #8b5cf6; }
+.sb-model-dot.model-badge-human { background-color: #f59e0b; }
+.sb-model-dot.model-badge-none { background-color: #64748b; }

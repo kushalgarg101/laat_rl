@@ -47,7 +47,8 @@ export function createGame(configOverrides: Partial<GameConfig> = {}): GameState
     gameOver: false,
     winnerIds: [],
     loserIds: [],
-    events: []
+    events: [],
+    roundRankings: {}
   };
 
   addEvent(state, "game_started", `${state.players[startingPlayer].name} starts with ${formatCard(config.startingCardId)}.`);
@@ -64,7 +65,8 @@ export function cloneGame(state: GameState): GameState {
     suitFailures: state.suitFailures.map((row) => [...row]),
     winnerIds: [...state.winnerIds],
     loserIds: [...state.loserIds],
-    events: state.events.map((event) => ({ ...event }))
+    events: state.events.map((event) => ({ ...event })),
+    roundRankings: { ...state.roundRankings }
   };
 }
 
@@ -209,7 +211,8 @@ export function getPublicView(state: GameState, viewerId: number, debugReveal = 
       hand: player.id === viewerId || debugReveal ? sortCards(player.hand) : null,
       suitFailures: [...state.suitFailures[player.id]]
     })),
-    events: state.events.slice(-80)
+    events: state.events.slice(-80),
+    roundRankings: state.roundRankings
   };
 }
 
@@ -283,6 +286,20 @@ function finishRoundIfNeeded(state: GameState): void {
   if (activeCount > 1 || state.roundDiscard.length === 0) {
     return;
   }
+
+  // Calculate rankings for this round (fewest cards = 1st place)
+  const counts = new Map<number, number[]>();
+  for (const player of state.players) {
+    const c = player.hand.length;
+    if (!counts.has(c)) {
+      counts.set(c, []);
+    }
+    counts.get(c)!.push(player.id);
+  }
+  const rankedGroups = Array.from(counts.keys())
+    .sort((a, b) => a - b)
+    .map((c) => counts.get(c)!);
+  state.roundRankings[state.round] = rankedGroups;
 
   addEvent(state, "round_ended", `Round ${state.round} ended with ${activeCount} player(s) holding cards.`);
 
