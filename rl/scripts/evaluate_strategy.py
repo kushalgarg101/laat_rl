@@ -40,6 +40,8 @@ class StrategyMetrics:
     avg_turns: float
     invalid_actions: int
     composite_score: float
+    laat_high_card_rate: float
+    laat_low_card_rate: float
     laat: BucketMetrics
     lead_open: BucketMetrics
     follow_suit: BucketMetrics
@@ -217,6 +219,7 @@ def evaluate_strategy(
     win_rate = wins / max(episodes, 1)
     loss_rate = losses / max(episodes, 1)
     avg_final_hand = float(np.mean(final_hands)) if final_hands else 0.0
+    laat = summarize_bucket(buckets["laat"])
     return StrategyMetrics(
         name=name,
         episodes=episodes,
@@ -226,7 +229,9 @@ def evaluate_strategy(
         avg_turns=float(np.mean(turns)) if turns else 0.0,
         invalid_actions=invalid_actions,
         composite_score=composite_score(win_rate, loss_rate, avg_final_hand, invalid_actions),
-        laat=summarize_bucket(buckets["laat"]),
+        laat_high_card_rate=laat.high_card_rate_p75,
+        laat_low_card_rate=laat.low_card_rate_p25,
+        laat=laat,
         lead_open=summarize_bucket(buckets["lead_open"]),
         follow_suit=summarize_bucket(buckets["follow_suit"]),
     )
@@ -314,8 +319,8 @@ def print_strategy_table(results: list[StrategyMetrics]) -> None:
                     f"{result.avg_final_hand:.2f}",
                     f"{result.composite_score:.2f}",
                     f"{result.laat.avg_rank_percentile:.3f}",
-                    f"{result.laat.high_card_rate_p75:.3f}",
-                    f"{result.laat.low_card_rate_p25:.3f}",
+                    f"{result.laat_high_card_rate:.3f}",
+                    f"{result.laat_low_card_rate:.3f}",
                     f"{result.lead_open.avg_rank_percentile:.3f}",
                     str(result.invalid_actions),
                 ]
@@ -324,32 +329,45 @@ def print_strategy_table(results: list[StrategyMetrics]) -> None:
 
 
 def log_to_wandb(args: argparse.Namespace, results: list[StrategyMetrics]) -> None:
-    import wandb
+    try:
+        import wandb
+    except ImportError:
+        return
 
-    run = wandb.init(
-        project=args.wandb_project,
-        name=args.wandb_run_name,
-        mode=args.wandb_mode,
-        config=vars(args),
-    )
+    try:
+        run = wandb.init(
+            project=args.wandb_project,
+            name=args.wandb_run_name,
+            mode=args.wandb_mode,
+            config=vars(args),
+        )
+    except Exception as exc:
+        print(f"WandB strategy eval logging disabled after init error: {exc}")
+        return
     for result in results:
         prefix = f"strategy/{result.name}"
-        wandb.log(
-            {
-                f"{prefix}/win_rate": result.win_rate,
-                f"{prefix}/loss_rate": result.loss_rate,
-                f"{prefix}/avg_final_hand": result.avg_final_hand,
-                f"{prefix}/avg_turns": result.avg_turns,
-                f"{prefix}/invalid_actions": result.invalid_actions,
-                f"{prefix}/composite_score": result.composite_score,
-                f"{prefix}/laat_rank_percentile": result.laat.avg_rank_percentile,
-                f"{prefix}/laat_high_card_rate": result.laat.high_card_rate_p75,
-                f"{prefix}/laat_low_card_rate": result.laat.low_card_rate_p25,
-                f"{prefix}/lead_rank_percentile": result.lead_open.avg_rank_percentile,
-                f"{prefix}/follow_rank_percentile": result.follow_suit.avg_rank_percentile,
-            }
-        )
-    run.finish()
+        try:
+            wandb.log(
+                {
+                    f"{prefix}/win_rate": result.win_rate,
+                    f"{prefix}/loss_rate": result.loss_rate,
+                    f"{prefix}/avg_final_hand": result.avg_final_hand,
+                    f"{prefix}/avg_turns": result.avg_turns,
+                    f"{prefix}/invalid_actions": result.invalid_actions,
+                    f"{prefix}/composite_score": result.composite_score,
+                    f"{prefix}/laat_rank_percentile": result.laat.avg_rank_percentile,
+                    f"{prefix}/laat_high_card_rate": result.laat_high_card_rate,
+                    f"{prefix}/laat_low_card_rate": result.laat_low_card_rate,
+                    f"{prefix}/lead_rank_percentile": result.lead_open.avg_rank_percentile,
+                    f"{prefix}/follow_rank_percentile": result.follow_suit.avg_rank_percentile,
+                }
+            )
+        except Exception as exc:
+            print(f"WandB strategy eval logging skipped after error: {exc}")
+    try:
+        run.finish()
+    except Exception as exc:
+        print(f"WandB finish skipped after error: {exc}")
 
 
 if __name__ == "__main__":

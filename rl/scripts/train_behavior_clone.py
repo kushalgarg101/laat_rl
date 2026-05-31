@@ -6,7 +6,10 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-import wandb
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 from rl.laat_game.bc_policy import BehaviorClonePolicy, masked_cross_entropy, save_bc_policy
 
@@ -58,13 +61,16 @@ def train_behavior_clone(args: argparse.Namespace, device: str) -> Path:
     optimizer = torch.optim.AdamW(policy.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
     run = None
-    if args.wandb_mode != "disabled":
-        run = wandb.init(
-            project=args.wandb_project,
-            name=args.wandb_run_name,
-            mode=args.wandb_mode,
-            config=vars(args),
-        )
+    if args.wandb_mode != "disabled" and wandb is not None:
+        try:
+            run = wandb.init(
+                project=args.wandb_project,
+                name=args.wandb_run_name,
+                mode=args.wandb_mode,
+                config=vars(args),
+            )
+        except Exception as exc:
+            print(f"WandB disabled after init error: {exc}")
 
     args.model_dir.mkdir(parents=True, exist_ok=True)
     best_acc = -1.0
@@ -73,15 +79,18 @@ def train_behavior_clone(args: argparse.Namespace, device: str) -> Path:
         train_loss, train_acc = run_epoch(policy, train_loader, optimizer, device)
         val_loss, val_acc = evaluate(policy, val_loader, device)
         if run is not None:
-            wandb.log(
-                {
-                    "bc/train_loss": train_loss,
-                    "bc/train_acc": train_acc,
-                    "bc/val_loss": val_loss,
-                    "bc/val_acc": val_acc,
-                    "bc/epoch": epoch,
-                }
-            )
+            try:
+                wandb.log(
+                    {
+                        "bc/train_loss": train_loss,
+                        "bc/train_acc": train_acc,
+                        "bc/val_loss": val_loss,
+                        "bc/val_acc": val_acc,
+                        "bc/epoch": epoch,
+                    }
+                )
+            except Exception as exc:
+                print(f"WandB BC logging skipped after error: {exc}")
         print(f"epoch={epoch} train_loss={train_loss:.4f} train_acc={train_acc:.3f} val_loss={val_loss:.4f} val_acc={val_acc:.3f}")
         save_bc_policy(args.model_dir / "latest.pt", policy, {"epoch": epoch, "val_acc": val_acc})
         if val_acc > best_acc:
@@ -89,7 +98,10 @@ def train_behavior_clone(args: argparse.Namespace, device: str) -> Path:
             save_bc_policy(best_path, policy, {"epoch": epoch, "val_acc": val_acc})
 
     if run is not None:
-        run.finish()
+        try:
+            run.finish()
+        except Exception as exc:
+            print(f"WandB finish skipped after error: {exc}")
     return best_path
 
 

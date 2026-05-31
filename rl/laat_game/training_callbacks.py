@@ -139,6 +139,7 @@ class StrategyEvalCallback(BaseCallback):
         self.use_wandb = use_wandb
         self.best_composite = float("-inf")
         self.best_win_rate = float("-inf")
+        self.best_selection_key: tuple[float, float, float, int] | None = None
 
     def _on_step(self) -> bool:
         if self.eval_freq <= 0 or self.num_timesteps % self.eval_freq != 0:
@@ -175,7 +176,7 @@ class StrategyEvalCallback(BaseCallback):
                 f"loss={metrics.loss_rate:.3f} "
                 f"final={metrics.avg_final_hand:.2f} "
                 f"score={metrics.composite_score:.2f} "
-                f"laat_hi={metrics.laat.high_card_rate_p75:.3f}"
+                f"laat_hi={metrics.laat_high_card_rate:.3f}"
             )
         if not self.use_wandb:
             return
@@ -193,8 +194,8 @@ class StrategyEvalCallback(BaseCallback):
                     "eval/composite_score": metrics.composite_score,
                     "eval/invalid_actions": metrics.invalid_actions,
                     "eval/laat_rank_percentile": metrics.laat.avg_rank_percentile,
-                    "eval/laat_high_card_rate": metrics.laat.high_card_rate_p75,
-                    "eval/laat_low_card_rate": metrics.laat.low_card_rate_p25,
+                    "eval/laat_high_card_rate": metrics.laat_high_card_rate,
+                    "eval/laat_low_card_rate": metrics.laat_low_card_rate,
                     "eval/lead_rank_percentile": metrics.lead_open.avg_rank_percentile,
                     "eval/follow_rank_percentile": metrics.follow_suit.avg_rank_percentile,
                     "eval/timesteps": self.num_timesteps,
@@ -212,6 +213,15 @@ class StrategyEvalCallback(BaseCallback):
         if metrics.win_rate > self.best_win_rate:
             self.best_win_rate = metrics.win_rate
             self.model.save(self.model_dir / "best_win_rate")
+        selection_key = (
+            metrics.win_rate,
+            -metrics.loss_rate,
+            -metrics.avg_final_hand,
+            -metrics.invalid_actions,
+        )
+        if self.best_selection_key is None or selection_key > self.best_selection_key:
+            self.best_selection_key = selection_key
+            self.model.save(self.model_dir / "best_final_candidate")
 
 
 class CurrentModelPolicy:

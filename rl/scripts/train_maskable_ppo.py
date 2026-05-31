@@ -7,7 +7,10 @@ from sb3_contrib import MaskablePPO
 from sb3_contrib.common.maskable.utils import get_action_masks
 from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback
 import torch
-import wandb
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 from rl.laat_game.env import LaatCardEnv
 from rl.laat_game.bc_policy import copy_bc_to_maskable_ppo, load_bc_policy
@@ -76,20 +79,24 @@ def main() -> None:
     )
     use_wandb = args.wandb_mode != "disabled"
     run = None
-    if use_wandb:
-        run = wandb.init(
-            project=args.wandb_project,
-            name=args.wandb_run_name,
-            mode=args.wandb_mode,
-            sync_tensorboard=True,
-            monitor_gym=False,
-            save_code=True,
-            config={
-                **vars(args),
-                "cuda_available": torch.cuda.is_available(),
-                "cuda_device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
-            },
-        )
+    if use_wandb and wandb is not None:
+        try:
+            run = wandb.init(
+                project=args.wandb_project,
+                name=args.wandb_run_name,
+                mode=args.wandb_mode,
+                sync_tensorboard=True,
+                monitor_gym=False,
+                save_code=True,
+                config={
+                    **vars(args),
+                    "cuda_available": torch.cuda.is_available(),
+                    "cuda_device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+                },
+            )
+        except Exception as exc:
+            print(f"WandB disabled after init error: {exc}")
+            use_wandb = False
 
     model = build_or_load_model(args, env, device)
     if args.init_policy is not None and not args.resume:
@@ -106,9 +113,12 @@ def main() -> None:
     )
     model.save(args.model_dir / "latest")
     if run is not None:
-        artifact = wandb.Artifact("maskable-ppo-latest", type="model")
-        artifact.add_file(str(args.model_dir / "latest.zip"))
-        run.log_artifact(artifact)
+        try:
+            artifact = wandb.Artifact("maskable-ppo-latest", type="model")
+            artifact.add_file(str(args.model_dir / "latest.zip"))
+            run.log_artifact(artifact)
+        except Exception as exc:
+            print(f"WandB artifact logging skipped after error: {exc}")
 
     obs, _ = env.reset(seed=args.seed + 1)
     done = False
@@ -117,7 +127,10 @@ def main() -> None:
         obs, _, terminated, truncated, _ = env.step(int(action))
         done = terminated or truncated
     if run is not None:
-        run.finish()
+        try:
+            run.finish()
+        except Exception as exc:
+            print(f"WandB finish skipped after error: {exc}")
 
 
 def build_or_load_model(args: argparse.Namespace, env: LaatCardEnv, device: str) -> MaskablePPO:

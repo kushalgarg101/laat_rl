@@ -7,13 +7,16 @@ import numpy as np
 import torch
 
 from rl.laat_game.env import LaatCardEnv
-from rl.laat_game.teachers import MixedTeacher, TEACHER_IDS
+from rl.laat_game.teachers import MixedTeacher
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--decisions", type=int, default=50_000)
-    parser.add_argument("--teacher-checkpoint", type=Path, default=Path("models/maskable_ppo_laat/checkpoints/laat_300000_steps.zip"))
+    parser.add_argument("--teacher-checkpoint", type=Path, action="append", default=None)
+    parser.add_argument("--teacher-checkpoint-weight", type=float, action="append", default=None)
+    parser.add_argument("--heuristic-teacher-weight", type=float, default=None)
+    parser.add_argument("--random-teacher-weight", type=float, default=None)
     parser.add_argument("--output", type=Path, default=Path("data/model2/imitation_50k.npz"))
     parser.add_argument("--players", type=int, default=4)
     parser.add_argument("--max-rounds", type=int, default=12)
@@ -45,7 +48,17 @@ def main() -> None:
         opponent_checkpoint=args.opponent_checkpoint,
         opponent_device=device,
     )
-    teacher = MixedTeacher(args.teacher_checkpoint, device=device, seed=args.seed)
+    teacher_checkpoints = args.teacher_checkpoint
+    if teacher_checkpoints is None:
+        teacher_checkpoints = [Path("models/maskable_ppo_laat/checkpoints/laat_300000_steps.zip")]
+    teacher = MixedTeacher(
+        teacher_checkpoints,
+        device=device,
+        seed=args.seed,
+        checkpoint_weight=args.teacher_checkpoint_weight,
+        heuristic_weight=args.heuristic_teacher_weight,
+        random_weight=args.random_teacher_weight,
+    )
 
     observations = []
     masks = []
@@ -64,7 +77,7 @@ def main() -> None:
         observations.append(obs.astype(np.float32))
         masks.append(mask.astype(bool))
         actions.append(action)
-        teacher_ids.append(TEACHER_IDS[teacher_name])
+        teacher_ids.append(teacher.teacher_id_map[teacher_name])
         episode_ids.append(episode_id)
         turns.append(env.state.turn if env.state is not None else 0)
 
@@ -80,6 +93,7 @@ def main() -> None:
         masks=np.asarray(masks, dtype=bool),
         actions=np.asarray(actions, dtype=np.int64),
         teacher_ids=np.asarray(teacher_ids, dtype=np.int64),
+        teacher_names=np.asarray(teacher.teacher_names),
         episode_ids=np.asarray(episode_ids, dtype=np.int64),
         turns=np.asarray(turns, dtype=np.int64),
     )

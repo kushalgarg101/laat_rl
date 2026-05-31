@@ -22,35 +22,98 @@ TEACHER_IDS = {
 class MixedTeacher:
     def __init__(
         self,
-        checkpoint_path: Path | None,
+        checkpoint_path: Path | list[Path] | None,
         device: str,
         seed: int = 7,
-        checkpoint_weight: float = 0.4,
-        heuristic_weight: float = 0.4,
-        random_weight: float = 0.2,
+        checkpoint_weight: float | list[float] | None = None,
+        heuristic_weight: float | None = None,
+        random_weight: float | None = None,
     ) -> None:
         self.rng = random.Random(seed)
         self.device = device
-        self.checkpoint_model = None
-        if checkpoint_path is not None and checkpoint_path.exists():
-            self.checkpoint_model = MaskablePPO.load(checkpoint_path, device=device)
-        weights = [heuristic_weight, checkpoint_weight if self.checkpoint_model is not None else 0.0, random_weight]
+        self.checkpoint_models: dict[str, MaskablePPO] = {}
+        checkpoint_paths = normalize_checkpoint_paths(checkpoint_path)
+        for index, path in enumerate(checkpoint_paths):
+            if not path.exists():
+                raise FileNotFoundError(f"Teacher checkpoint does not exist: {path}")
+            self.checkpoint_models[f"checkpoint_{index}"] = MaskablePPO.load(path, device=device)
+
+        checkpoint_weights = normalize_checkpoint_weights(
+            checkpoint_weight,
+            checkpoint_count=len(checkpoint_paths),
+            heuristic_weight=heuristic_weight,
+            random_weight=random_weight,
+        )
+        default_heuristic = 0.4 if len(checkpoint_paths) <= 1 else 0.20
+        default_random = 0.2 if len(checkpoint_paths) <= 1 else 0.05
+        teacher_weights: list[tuple[str, float]] = [
+            ("heuristic", default_heuristic if heuristic_weight is None else heuristic_weight),
+            ("random", default_random if random_weight is None else random_weight),
+        ]
+        for index, weight in enumerate(checkpoint_weights):
+            name = f"checkpoint_{index}"
+            teacher_weights.append((name, weight if name in self.checkpoint_models else 0.0))
+
+        weights = [weight for _, weight in teacher_weights]
+        if any(weight < 0 for weight in weights):
+            raise ValueError("Teacher weights must be non-negative.")
         total = sum(weights)
         if total <= 0:
-            weights = [1.0, 0.0, 0.0]
+            teacher_weights = [("heuristic", 1.0)]
+            weights = [1.0]
             total = 1.0
-        self.teacher_names = ["heuristic", "checkpoint", "random"]
+        self.teacher_names = [name for name, _ in teacher_weights]
         self.weights = [weight / total for weight in weights]
+        self.teacher_id_map = {
+            **TEACHER_IDS,
+            **{f"checkpoint_{index}": 10 + index for index in range(len(checkpoint_paths))},
+        }
 
     def choose(self, env: LaatCardEnv) -> tuple[int, str]:
         teacher = self.rng.choices(self.teacher_names, weights=self.weights, k=1)[0]
-        if teacher == "checkpoint" and self.checkpoint_model is not None:
-            action, _ = self.checkpoint_model.predict(env.current_observation(), action_masks=get_action_masks(env), deterministic=True)
+        if teacher in self.checkpoint_models:
+            action, _ = self.checkpoint_models[teacher].predict(env.current_observation(), action_masks=get_action_masks(env), deterministic=True)
             return int(action), teacher
         if teacher == "random":
             legal = get_legal_moves(env.state)
             return int(self.rng.choice(legal)), teacher
         return choose_heuristic_action(env.state), "heuristic"
+
+
+def normalize_checkpoint_paths(checkpoint_path: Path | list[Path] | None) -> list[Path]:
+    if checkpoint_path is None:
+        return []
+    if isinstance(checkpoint_path, list):
+        return checkpoint_path
+    return [checkpoint_path]
+
+
+def normalize_checkpoint_weights(
+    checkpoint_weight: float | list[float] | None,
+    checkpoint_count: int,
+    heuristic_weight: float | None,
+    random_weight: float | None,
+) -> list[float]:
+    if checkpoint_count <= 0:
+        return []
+    if isinstance(checkpoint_weight, list):
+        if len(checkpoint_weight) != checkpoint_count:
+            raise ValueError("checkpoint_weight list must match checkpoint count.")
+        return checkpoint_weight
+    if checkpoint_weight is not None:
+        return [checkpoint_weight / checkpoint_count] * checkpoint_count
+    if checkpoint_count == 1:
+        return [0.4]
+
+    remaining = 1.0 - (0.20 if heuristic_weight is None else heuristic_weight) - (0.05 if random_weight is None else random_weight)
+    defaults = [0.45, 0.30]
+    if checkpoint_count <= len(defaults):
+        weights = defaults[:checkpoint_count]
+    else:
+        extra = checkpoint_count - len(defaults)
+        weights = defaults + [max(remaining - sum(defaults), 0.0) / extra] * extra
+    total = sum(weights)
+    return [weight * remaining / total for weight in weights] if total > 0 else [0.0] * checkpoint_count
 
 
 def choose_heuristic_action(state: GameState) -> int:
