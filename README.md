@@ -2,6 +2,8 @@
 
 An interactive web-based simulator and Reinforcement Learning (RL) training stack for the **Laat** card game. The project features a Gymnasium environment, a Maskable Proximal Policy Optimization (PPO) agent training pipeline, and a frontend interface for playing the game and watching RL agents compete in real-time.
 
+![Laat Game UI – RL agent (Model 3 – League) competing against heuristic bots in real-time](assets/screenshot.png)
+
 ---
 
 ## 🎮 What is Laat?
